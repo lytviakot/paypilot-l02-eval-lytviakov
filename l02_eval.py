@@ -237,7 +237,9 @@ def make_judge(provider: str, model: str):
     if provider == "anthropic":
         base = AnthropicModel
         known = anthropic_model_facts(model)
-        kwargs = {"model": model}
+        # DeepEval's default max_tokens is 1024; a judge that reasons first can
+        # spend all of it and return no text block, or cut the JSON short.
+        kwargs = {"model": model, "generation_kwargs": {"max_tokens": 4096}}
         if known.get("accepts_temperature", True):
             kwargs["temperature"] = 0
         for field in ("cost_per_input_token", "cost_per_output_token"):
