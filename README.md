@@ -1,3 +1,23 @@
+# Homework 1: Quality Bar Proposal (PayPilot, L02)
+
+**Deliverable:** [quality-bar-proposal.md](quality-bar-proposal.md). Supporting notes: [lab-report.md](lab-report.md) (lab steps 1-9), [complaints.md](complaints.md) (complaints with a layer for each).
+
+**Raw data:** `reports/l02-clean-lesson-02-20261011-165841.json`. All numbers in the proposal come from this report.
+
+**How the run is reproduced** (stand running locally, judge key in `.env`):
+
+```
+docker compose run --rm eval --profiles clean,lesson-02 --runs 3 --baseline-runs 2
+```
+
+- **Profiles:** `clean` (baseline, 2 runs) and `lesson-02` (3 runs), 13 cases from `cases.json`.
+- **Judge:** `claude-haiku-5-5` (the default `JUDGE_MODEL`).
+- **Clock:** the script sets the stand clock to `2026-09-15T10:00:00Z` itself (`CLOCK` in `l02_eval.py`).
+- **Run date:** 2026-10-11.
+- The `.env` file with API keys is not in the repository (see `.env.example`).
+
+---
+
 # L02 · Скрипт метрик
 
 Три текстові метрики DeepEval (faithfulness, answer relevancy, hallucination
