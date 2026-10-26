@@ -1,34 +1,34 @@
-# Бот — як новий співробітник підтримки
+# The bot as a new support employee
 
-Клієнт питає, співробітник робить три кроки:
-1. знаходить сторінку в папці з інструкціями
-2. переказує її клієнту
-3. застосовує правило до цього клієнта: рахує суму, перевіряє строк
+A customer asks, and the employee takes three steps:
+1. finds the page in the folder of instructions
+2. retells it to the customer
+3. applies the rule to this customer: calculates the amount, checks the deadline
 
-## 1. Не знайшов
-C-13 · у таблиці тарифів ліміт EUR 1,500 замість 5,000
-C-14 · список кодів є, вікна спору немає
+## 1. Did not find
+C-13 · the tariff table shows a EUR 1,500 limit instead of 5,000
+C-14 · the list of codes is there, the dispute window is not
 
-## 2. Сказав не те
-C-01 · комісія за SWIFT «1.5%» замість EUR 15 + 0.3%
-C-02 · питала про строк спору, отримала про ліміти
-C-05 · фінальна сума не сходиться з рядками вище
-C-06 · баланс не того рахунку
-C-17 · три абзаци політики, без співчуття
-C-19 · вигаданий вклад «Premium Plus»
+## 2. Said the wrong thing
+C-01 · SWIFT fee "1.5%" instead of EUR 15 + 0.3%
+C-02 · asked about the dispute deadline, got limits
+C-05 · the final amount does not match the lines above it
+C-06 · the balance of the wrong account
+C-17 · three paragraphs of policy, no empathy
+C-19 · an invented "Premium Plus" deposit
 
-## 3. Застосував не так
-C-03 · підтвердив спір, який уже не подати
-C-04 · спред 1.5% замість 0.9% для клієнтки другого рівня
-C-07 · курс обміну «знову виглядав дивно»
-C-08 · спред лише на суму понад ліміт
-C-09 · залишок ліміту «близько 95 тисяч»
-C-10 · спір на рахунку під перевіркою
-C-11 · «120 днів на спір?»
-C-12 · «60 чи 120 днів?»
+## 3. Applied wrongly
+C-03 · confirmed a dispute that can no longer be filed
+C-04 · spread 1.5% instead of 0.9% for a tier 2 customer
+C-07 · exchange rate "looked odd again"
+C-08 · spread only on the amount above the allowance
+C-09 · remaining limit "about 95 thousand"
+C-10 · dispute on an account under review
+C-11 · "120 days to dispute?"
+C-12 · "60 or 120 days?"
 
-## Не про бота або нема чим відтворити
-C-15 · застосунок зависає
-C-16 · «немає кешбеку» — бот відповів правильно
-C-18 · забув суму 240.00 — це пам'ять, п'яте заняття
-C-20 · відгук без даних
+## Not about the bot, or nothing to reproduce
+C-15 · the app freezes
+C-16 · "no cashback" — the bot answered correctly
+C-18 · forgot the amount 240.00 — that is memory, the fifth lesson
+C-20 · a review without data

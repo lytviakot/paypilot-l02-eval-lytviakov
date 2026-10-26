@@ -394,14 +394,14 @@ def fmt(vals: list | None) -> str:
 
 
 LABELS = {"faithfulness": "faithfulness", "answer_relevancy": "answer relevancy",
-          "hallucination": "hallucination rate ↓", "domain": "доменна коректність"}
+          "hallucination": "hallucination rate ↓", "domain": "domain correctness"}
 
 
 def report(records: list, profiles: list, cases: list, passes: int, metrics: set) -> None:
     means = {p: run_means(records, p) for p in profiles}
     base = profiles[0]
-    print("\n" + "Метрика".ljust(23) + "".join(p.ljust(22) for p in profiles)
-          + ("Дельта" if len(profiles) > 1 else ""))
+    print("\n" + "Metric".ljust(23) + "".join(p.ljust(22) for p in profiles)
+          + ("Delta" if len(profiles) > 1 else ""))
     for key, label in LABELS.items():
         row = label.ljust(23) + "".join(fmt(means[p].get(key)).ljust(22) for p in profiles)
         if len(profiles) > 1 and means[base].get(key) and means[profiles[-1]].get(key):
@@ -411,7 +411,7 @@ def report(records: list, profiles: list, cases: list, passes: int, metrics: set
 
     others = [r for r in records if r["profile"] != BASELINE]
     wrong = [r for r in others if r.get("domain") and not r["domain"]["passed"]]
-    section(f"Зелена метрика на хибному висновку (faithfulness ≥ {GREEN}, домен ✗)", [
+    section(f"Green metric on a wrong conclusion (faithfulness ≥ {GREEN}, domain ✗)", [
         f"{r['profile']} run {r['run']} {r['id']}: faithfulness {score(r, 'faithfulness')} · "
         f"{r['domain']['detail']}\n      «{r['answer'][:220]}»"
         for r in wrong if (score(r, "faithfulness") or 0) >= GREEN])
@@ -423,8 +423,8 @@ def report(records: list, profiles: list, cases: list, passes: int, metrics: set
         if low and (not r.get("domain") or r["domain"]["passed"]):
             lines.append(f"{r['profile']} run {r['run']} {r['id']}: {low}\n"
                          f"      «{r['answer'][:220]}»")
-    section("Кандидати у false positive (LLM-метрика < 0.7, домен ✓ або без домену) — "
-            "перевір очима", lines)
+    section("False positive candidates (LLM metric < 0.7, domain ✓ or no domain check) — "
+            "check by eye", lines)
 
     clean = [r for r in records if r["profile"] == BASELINE]
     lines = []
@@ -436,9 +436,9 @@ def report(records: list, profiles: list, cases: list, passes: int, metrics: set
         for t in THRESHOLDS:
             caught = sum(score(r, name) < t for r in hit)
             alarms = sum(score(r, name) < t for r in ok)
-            lines.append(f"{LABELS[name]:<18} < {t}: ловить {caught}/{len(hit)} · "
-                         f"хибні тривоги на clean {alarms}/{len(ok)}")
-    section("Поріг: скільки дефектних кейсів ловить і скільки чистих зупиняє без причини",
+            lines.append(f"{LABELS[name]:<18} < {t}: catches {caught}/{len(hit)} · "
+                         f"false alarms on clean {alarms}/{len(ok)}")
+    section("Threshold: how many defective cases it catches and how many clean ones it stops for no reason",
             lines)
 
     agent_calls = sum(r["agent"]["llm_calls"] for r in records)
@@ -450,11 +450,11 @@ def report(records: list, profiles: list, cases: list, passes: int, metrics: set
     agent_usd = (tok_in * price_in + tok_out * price_out) / 1e6
     judge_usd = sum(r["judge"]["cost_usd"] for r in records)
     formula = formula_calls(cases, metrics) * passes
-    print(f"\nВартість: формула лонгріда (кейси × (1 + метрики)) = {formula} викликів; "
-          f"фактично {agent_calls} llm.call агента + {judge_calls} викликів судді")
-    print(f"   агент {tok_in:,} in / {tok_out:,} out токенів ≈ ${agent_usd:.3f} "
-          f"(прайс {price_in}/{price_out} за 1M) · суддя ≈ ${judge_usd:.3f} · "
-          f"разом ≈ ${agent_usd + judge_usd:.3f}")
+    print(f"\nCost: lecture formula (cases × (1 + metrics)) = {formula} calls; "
+          f"actual {agent_calls} agent llm.call + {judge_calls} judge calls")
+    print(f"   agent {tok_in:,} in / {tok_out:,} out tokens ≈ ${agent_usd:.3f} "
+          f"(price {price_in}/{price_out} per 1M) · judge ≈ ${judge_usd:.3f} · "
+          f"total ≈ ${agent_usd + judge_usd:.3f}")
 
 
 def score(rec: dict, name: str):
@@ -463,7 +463,7 @@ def score(rec: dict, name: str):
 
 def section(title: str, lines: list) -> None:
     print(f"\n{title}:")
-    for line in lines or ["немає"]:
+    for line in lines or ["none"]:
         print(f"   {line}")
 
 
@@ -502,11 +502,11 @@ def dry_run(cases: list, facts: dict, plan: dict, metrics: set) -> None:
     passes = sum(plan.values())
     judge = sum(JUDGE_CALLS[m] for c in cases for m in c.get("metrics", []) if m in metrics)
     runs = " + ".join(f"{p} ×{n}" for p, n in plan.items())
-    print(f"\n{len(cases)} кейсів × ({runs}) = {len(cases) * passes} звернень до агента "
-          f"(кожне — зазвичай 2–3 llm.call)")
-    print(f"формула лонгріда: {formula_calls(cases, metrics) * passes} викликів")
-    print(f"DeepEval насправді: ≈{judge * passes} викликів судді + ≈{2 * len(cases) * passes}–"
-          f"{3 * len(cases) * passes} llm.call агента")
+    print(f"\n{len(cases)} cases × ({runs}) = {len(cases) * passes} agent requests "
+          f"(each usually 2–3 llm.call)")
+    print(f"lecture formula: {formula_calls(cases, metrics) * passes} calls")
+    print(f"DeepEval in practice: ≈{judge * passes} judge calls + ≈{2 * len(cases) * passes}–"
+          f"{3 * len(cases) * passes} agent llm.call")
 
 
 def load_cases(path: Path) -> list:
@@ -559,7 +559,7 @@ def main() -> None:
                                 "judge_provider": judge_spec[0], "judge_model": judge_spec[1],
                                 "facts": facts, "records": records},
                                ensure_ascii=False, indent=2, default=str), encoding="utf-8")
-    print(f"\nзвіт: {path}")
+    print(f"\nreport: {path}")
     check_judge(records)
 
 

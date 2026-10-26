@@ -1,6 +1,6 @@
 # Homework 1: Quality Bar Proposal (PayPilot, L02)
 
-**Deliverable:** [quality-bar-proposal.md](quality-bar-proposal.md). Supporting notes: [lab-report.md](lab-report.md) (lab steps 1-9), [complaints.md](complaints.md) (complaints with a layer for each).
+**Deliverable:** [quality-bar-proposal.md](quality-bar-proposal.md). Supporting notes: [lab-report.md](lab-report.md) (lab steps 1-9), [complaints.md](complaints.md) (complaints with a layer for each), [triage.md](triage.md).
 
 **Raw data:** `reports/l02-clean-lesson-02-20261011-165841.json`. All numbers in the proposal come from this report.
 
@@ -18,148 +18,152 @@ docker compose run --rm eval --profiles clean,lesson-02 --runs 3 --baseline-runs
 
 ---
 
-# L02 · Скрипт метрик
+# L02 · Metrics script
 
-Три текстові метрики DeepEval (faithfulness, answer relevancy, hallucination
-rate) поруч із доменною коректністю, яку рахують рушії стенду PayPilot.
-Скрипт до заняття L02 курсу з тестування LLM-агентів.
+Three DeepEval text metrics (faithfulness, answer relevancy, hallucination
+rate) next to domain correctness, which is computed by the rules engines of the
+PayPilot stand. The script belongs to lesson L02 of the course on testing LLM
+agents.
 
-Python локально не потрібен: скрипт запускається в Docker. Усе для
-лабораторної береш звідси одним `git clone`, окремо нічого завантажувати не
-треба.
+No local Python is needed: the script runs in Docker.
 
-## Що зробити, коротко
+## Quick start
 
-Корінь курсу завжди `~/paypilot`: стенд у `~/paypilot/paypilot-stand`, цей репозиторій — у
-`~/paypilot/l02` (папка уроку; наступні уроки лягають поруч: `l03`, …).
+The course root is `~/paypilot`: the stand is in `~/paypilot/paypilot-stand`,
+this repository is in `~/paypilot/l02`.
 
-1. Підняти локальний стенд: у `~/paypilot/paypilot-stand` — `docker compose up -d --build`, потім `docker compose exec stand python scripts/doctor.py`.
-2. Склонувати цей репозиторій поруч зі стендом:
-   `git clone https://github.com/sergeytkachenko/paypilot-l02-eval.git ~/paypilot/l02`
-3. `cd ~/paypilot/l02`, `cp .env.example .env`, вписати в `.env`
-   ключ судді (`STAND_DIR` за замовчуванням уже `../paypilot-stand`).
-4. `docker compose build` — один раз.
-5. `docker compose run --rm eval --runs 3 --baseline-runs 2 --dry-run`, потім
-   те саме без `--dry-run`.
+1. Start the local stand: in `~/paypilot/paypilot-stand` run
+   `docker compose up -d --build`, then
+   `docker compose exec stand python scripts/doctor.py`.
+2. Clone this repository next to the stand:
+   `git clone https://github.com/lytviakot/paypilot-l02-eval-lytviakov.git ~/paypilot/l02`
+3. `cd ~/paypilot/l02`, `cp .env.example .env`, put the judge key into `.env`
+   (`STAND_DIR` already defaults to `../paypilot-stand`).
+4. `docker compose build`, once.
+5. `docker compose run --rm eval --runs 3 --baseline-runs 2 --dry-run`, then
+   the same without `--dry-run`.
 
-Деталі кожного кроку нижче.
+The default judge is `claude-haiku-5-5`. An old copy of the script sends
+`temperature` to this model and gets a 400 error ("`temperature` is deprecated
+for this model"), so pull before running.
 
-Склонував раніше за 09.10.2026 — почни з `git pull`. Суддя за замовчуванням
-тепер `claude-haiku-5-5`, а стара версія скрипта надсилає цій моделі
-`temperature` і отримує у відповідь 400 з текстом
-"`temperature` is deprecated for this model".
+## What is in the repository
 
-## Що в репозиторії
-
-| Файл | Що це |
+| File | What it is |
 |---|---|
-| `complaints.md` | двадцять скарг C-01…C-20 — вхідний матеріал кроку 1 |
-| `triage.md` | дошка кроку 1: бот як новий співробітник підтримки і три купки для скарг — не знайшов, сказав не те, застосував не так |
-| `l02_eval.py` | скрипт: шле кейси боту, рахує метрики, друкує звіт |
-| `cases.json` | 13 кейсів зі скарг: запит, клієнт (`customer_id`), оракул, перевірка, метрики, контекст |
-| `requirements.txt` | залежності, ставляться в образ |
-| `Dockerfile`, `docker-compose.yml` | образ і запуск |
-| `.env.example` | шаблон `.env`: шлях до стенду і ключ судді |
+| `quality-bar-proposal.md` | the homework deliverable |
+| `lab-report.md` | the lab report (steps 1-9) |
+| `complaints.md` | twenty complaints C-01 to C-20, the input of lab step 1, with a layer and a reason for each |
+| `triage.md` | the lab step 1 board: the bot as a new support employee, and three piles for the complaints (not found, said the wrong thing, applied wrongly) |
+| `l02_eval.py` | the script: sends the cases to the bot, computes the metrics, prints a report |
+| `cases.json` | 13 cases built from the complaints: request, customer (`customer_id`), oracle, check, metrics, context |
+| `reports/` | raw JSON reports of the runs |
+| `requirements.txt` | dependencies, installed into the image |
+| `Dockerfile`, `docker-compose.yml` | image and launch |
+| `.env.example` | template for `.env`: stand path and judge key |
 
-Стенд не бере клієнта з тексту питання: «I'm CUS-0005» у запиті сесію не
-відкриває. Скрипт передає стенду поле `customer_id` кейса — це те саме, що
-обрати клієнта в дропдауні «як клієнт» у вебінтерфейсі. Кейс без
-`customer_id` іде «без клієнта», і `get_account` відповідає
+The stand does not take the customer from the question text: "I'm CUS-0005" in
+a request does not open a session. The script passes the `customer_id` field
+of the case to the stand, which is the same as choosing a customer in the "as
+customer" dropdown of the web interface. A case without `customer_id` runs
+without a customer, and `get_account` answers
 `no customer is signed in for this session`.
 
-## Що потрібно
+## Requirements
 
-- Docker Desktop (macOS, Windows) або Docker Engine з compose (Linux).
-- Піднятий **локальний** стенд `~/paypilot/paypilot-stand` (`docker compose up -d --build`, перевірка — `docker compose exec stand python scripts/doctor.py`)
-  на `http://localhost:8000`. Скрипт перемикає профілі, скидає базу й ставить
-  годинник, тому на спільному стенді його не запускай.
-- Каталог стенду на цьому ж комп'ютері: скрипт імпортує з нього рушії
-  (`app/engines`). Клонуй цей репозиторій у `~/paypilot/l02`, поруч зі стендом:
-  тоді `STAND_DIR` за замовчуванням (`../paypilot-stand`) уже правильний.
+- Docker Desktop (macOS, Windows) or Docker Engine with compose (Linux).
+- A **local** stand `~/paypilot/paypilot-stand` running on
+  `http://localhost:8000`. The script switches profiles, resets the database
+  and sets the clock, so do not run it against a shared stand.
+- The stand directory on the same computer: the script imports the rules
+  engines (`app/engines`) from it. Clone this repository into
+  `~/paypilot/l02`, next to the stand, and the default `STAND_DIR`
+  (`../paypilot-stand`) is already correct.
 
-## Запуск
+## Running
 
 ```bash
 mkdir -p ~/paypilot
-git clone https://github.com/sergeytkachenko/paypilot-l02-eval.git ~/paypilot/l02
+git clone https://github.com/lytviakot/paypilot-l02-eval-lytviakov.git ~/paypilot/l02
 cd ~/paypilot/l02
-cp .env.example .env        # впиши STAND_DIR і ключ судді
-docker compose build        # один раз, близько хвилини
+cp .env.example .env        # set STAND_DIR and the judge key
+docker compose build        # once, about a minute
 
-# план і кількість викликів, нічого не викликає
+# plan and number of calls, calls nothing
 docker compose run --rm eval --runs 3 --baseline-runs 2 --dry-run
 
-# повний прогін: clean двічі, lesson-02 тричі; ≈6 хв, ≈$0.1 на Haiku 5.5
+# full run: clean twice, lesson-02 three times; about 6 min, about $0.1 on Haiku 5.5
 docker compose run --rm eval --runs 3 --baseline-runs 2
 ```
 
-Команди однакові для macOS, Linux і Windows (PowerShell). Усе після `eval` —
-прапорці скрипта. Звіт друкується в термінал, сирі дані лягають у
-`reports/*.json` у цьому каталозі. Щоб зберегти й звіт, додай `-T` і `tee`:
+The commands are the same for macOS, Linux and Windows (PowerShell). Everything
+after `eval` is a script flag. The report is printed to the terminal and the
+raw data goes to `reports/*.json` in this directory. To keep the printed report
+too, add `-T` and `tee`:
 
 ```bash
 mkdir -p reports
 docker compose run --rm -T eval --runs 3 --baseline-runs 2 2>&1 | tee reports/full-run.txt
 ```
 
-`l02_eval.py` і `cases.json` підмонтовані в контейнер, тож правки в них
-діють одразу, без перезбирання. `docker compose build` потрібен лише після
-зміни `requirements.txt` або `Dockerfile`.
+`l02_eval.py` and `cases.json` are mounted into the container, so edits to them
+apply at once without a rebuild. `docker compose build` is needed only after
+changing `requirements.txt` or the `Dockerfile`.
 
 ## `.env`
 
-| Змінна | Що це |
+| Variable | What it is |
 |---|---|
-| `STAND_DIR` | шлях до каталогу `paypilot-stand`, за замовчуванням `../paypilot-stand`. Windows: `C:/paypilot/paypilot-stand` |
-| `ANTHROPIC_API_KEY` / `OPENAI_API_KEY` | ключ судді, той самий, що в `.env` стенду; якщо задано кілька ключів, береться Anthropic, потім OpenAI, потім Gemini |
-| `GEMINI_API_KEY` | ключ Google AI Studio, якщо суддею буде Gemini. Якщо образ зібраний до появи Gemini, після `git pull` один раз виконай `docker compose build` |
-| `ANTHROPIC_BASE_URL`, `ANTHROPIC_AUTH_TOKEN` | для стенду через OpenRouter: `https://openrouter.ai/api` і той самий ключ |
-| `JUDGE_MODEL` | суддя, за замовчуванням `claude-haiku-5-5`, `gpt-4.1-mini` або `gemini-3.5-flash-lite`. Порожнє значення залишає дефолт кіту — так і треба |
-| `EVAL_STAND_URL` | адреса стенду зсередини контейнера, див. нижче |
-| `STAND_PORT`, `STAND_PROFILE` | окремий стенд: порт на `127.0.0.1` (за замовчуванням `8010`) і стартовий профіль (`lesson-02`) |
-| `AGENT_PRICE_IN`, `AGENT_PRICE_OUT` | ціна агента, USD за 1M токенів, для рядка вартості. За замовчуванням `0.1` / `0.5` — прайс Haiku 5.5 до 100k токенів промпту, бо курс просить виставити у стенді саме її. Твій стенд на іншій моделі — впиши її прайс, інакше рядок вартості збреше |
+| `STAND_DIR` | path to the `paypilot-stand` directory, default `../paypilot-stand`. Windows: `C:/paypilot/paypilot-stand` |
+| `ANTHROPIC_API_KEY` / `OPENAI_API_KEY` | judge key, the same as in the stand's `.env`; when several keys are set, Anthropic wins, then OpenAI, then Gemini |
+| `GEMINI_API_KEY` | Google AI Studio key, if the judge is Gemini. If the image was built before Gemini support appeared, run `docker compose build` once after `git pull` |
+| `ANTHROPIC_BASE_URL`, `ANTHROPIC_AUTH_TOKEN` | for a stand behind OpenRouter: `https://openrouter.ai/api` and the same key |
+| `JUDGE_MODEL` | the judge, default `claude-haiku-5-5`, `gpt-4.1-mini` or `gemini-3.5-flash-lite`. An empty value keeps the kit default, which is intended |
+| `EVAL_STAND_URL` | stand address as seen from inside the container, see below |
+| `STAND_PORT`, `STAND_PROFILE` | separate stand: port on `127.0.0.1` (default `8010`) and startup profile (`lesson-02`) |
+| `AGENT_PRICE_IN`, `AGENT_PRICE_OUT` | agent price, USD per 1M tokens, for the cost line. Defaults `0.1` / `0.5`, the Haiku 5.5 price for prompts under 100k tokens, because the course asks for that model on the stand. If your stand runs another model, put its price here, otherwise the cost line will be wrong |
 
-## Адреса стенду
+## Stand address
 
-Усередині контейнера `localhost` — це сам контейнер, а не твій комп'ютер.
-Тому сервіс `eval` ходить на стенд через `http://host.docker.internal:8000`.
-Стенд на іншому порту — задай `EVAL_STAND_URL` у `.env`, наприклад
+Inside the container `localhost` is the container itself, not your computer.
+So the `eval` service reaches the stand at `http://host.docker.internal:8000`.
+For a stand on another port, set `EVAL_STAND_URL` in `.env`, for example
 `http://host.docker.internal:8010`.
 
-Linux, стенд опублікований лише на `127.0.0.1`: `host.docker.internal`
-туди не дістане. Бери сервіс `eval-host`, він працює в мережі хоста:
+Linux, stand published on `127.0.0.1` only: `host.docker.internal` cannot reach
+it. Use the `eval-host` service, which runs in the host network:
 
 ```bash
 EVAL_STAND_URL=http://127.0.0.1:8010 docker compose run --rm eval-host --runs 3 --baseline-runs 2
 ```
 
-## Окремий стенд
+## Separate stand
 
-Якщо `localhost:8000` зайнятий спільним стендом (як на devhub), не чіпай
-його: `docker compose up` у `paypilot-stand` перестворить спільний контейнер. Підніми окремий стенд із
-цього ж `docker-compose.yml`. Сервіс `stand` збирається з каталогу
-`STAND_DIR`, бере його `.env` і слухає лише `127.0.0.1:8010`:
+If `localhost:8000` is taken by a shared stand, do not touch it: `docker compose up`
+in `paypilot-stand` would recreate the shared container. Start a separate stand
+from this `docker-compose.yml`. The `stand` service is built from `STAND_DIR`,
+uses its `.env` and listens on `127.0.0.1:8010` only:
 
 ```bash
-docker compose up -d --build stand   # профіль lesson-02
+docker compose up -d --build stand   # profile lesson-02
 curl -s http://127.0.0.1:8010/health
 ```
 
-У `.env` цього репозиторію додай `EVAL_STAND_URL=http://stand:8000`:
-сервіс `eval` дістає стенд за іменем, бо обидва в одному compose. Команди
-запуску ті самі, з `eval`. Після прогону прибери стенд:
+Add `EVAL_STAND_URL=http://stand:8000` to the `.env` of this repository: the
+`eval` service reaches the stand by name, because both are in one compose.
+The run commands are the same, with `eval`. After the run, remove the stand:
 
 ```bash
 docker compose --profile stand down
 ```
 
-## Корисні прапорці
+## Useful flags
 
-| Прапорець | Що робить |
+| Flag | What it does |
 |---|---|
-| `--profiles clean,lesson-02` | профілі по черзі; перший — baseline |
-| `--runs 3` / `--baseline-runs 2` | прогони профілю заняття / прогони `clean` |
-| `--only C-03,C-04` | лише ці кейси |
-| `--metrics domain` | лише доменна коректність: без судді, безкоштовно і миттєво |
-| `--workers 4` | паралельні кейси; при rate limit зменш |
-| `--dry-run` | план і кількість викликів, нічого не викликає |
+| `--profiles clean,lesson-02` | profiles in turn; the first is the baseline |
+| `--runs 3` / `--baseline-runs 2` | runs of the lesson profile / runs of `clean` |
+| `--only C-03,C-04` | only these cases |
+| `--metrics domain` | domain correctness only: no judge, free and instant |
+| `--workers 4` | parallel cases; lower it on rate limits |
+| `--dry-run` | plan and number of calls, calls nothing |
