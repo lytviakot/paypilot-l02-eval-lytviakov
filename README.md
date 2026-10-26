@@ -11,6 +11,7 @@ docker compose run --rm eval --profiles clean,lesson-02 --runs 3 --baseline-runs
 ```
 
 - **Profiles:** `clean` (baseline, 2 runs) and `lesson-02` (3 runs), 13 cases from `cases.json`.
+- **Agent model:** `claude-haiku-5-5` (the stand default; every record of the report carries it in `agent.model`). Domain correctness on `lesson-02` is 5 of 12 in each of the 3 runs with this model; the count depends on the agent model, so a run on another model can differ.
 - **Judge:** `claude-haiku-5-5` (the default `JUDGE_MODEL`).
 - **Clock:** the script sets the stand clock to `2026-09-15T10:00:00Z` itself (`CLOCK` in `l02_eval.py`).
 - **Run date:** 2026-10-11.

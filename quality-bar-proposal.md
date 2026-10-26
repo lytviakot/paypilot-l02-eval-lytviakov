@@ -3,7 +3,7 @@
 A proposal for the CTO, not a run report: a set of metrics and thresholds under the mandate **Ship it**.
 
 Data: `l02_eval.py` run, profiles `clean` x 2 and `lesson-02` x 3,
-judge `claude-haiku-5-5`,
+agent and judge `claude-haiku-5-5`,
 date 2026-10-11, `CLOCK_OVERRIDE=2026-09-15T10:00:00Z`.
 
 Reports: `reports/l02-clean-lesson-02-20261011-165841.json`.
@@ -120,7 +120,7 @@ Clean gives both figures (1/1) from the same knowledge base. So the cause is the
 | Action | rule applied wrongly (wrong window, wrong spread) | Domain correctness | Answers that contain the value computed by the rules engine, out of the cases that have a check (12 of 13) | Catches wrong numbers and day counts; free and deterministic. Misses correct answers worded differently from the pattern, and wrong answers that happen not to trigger it (C-03, phrase "is eligible") |
 | Generation | made-up statements that the bot's sources do not support | Faithfulness | Claims in the answer that the bot's own sources (tool output, retrieved documents) support, out of all claims in the answer | Catches invented statements. Misses a wrong value copied correctly from a broken tool or wrong document (C-05, score 1.0), and penalises harmless extras such as an offer to escalate (C-19) |
 | Generation | answer off topic | Answer relevancy | Sentences that are relevant to the question, out of all sentences in the answer | Catches an answer to a different question. Misses wrong facts, and counts useful extras as irrelevant (C-09, daily limit next to the monthly one) |
-| Generation | answer contradicts the correct facts | Hallucination rate (lower is better) | Reference facts (rule text plus rules-engine result) that the answer contradicts, out of all reference facts given to the judge | Catches an answer that disagrees with the correct facts, even when the bot copied a broken source. Misses anything the reference facts do not mention, and a wrong reference. Measured here on 3 cases only (C-03, C-04, C-08); closes at L2 |
+| Generation | answer contradicts the correct facts | Hallucination rate (lower is better) | Reference facts (rule text plus rules-engine result) that the answer contradicts, out of all reference facts given to the judge | Catches an answer that disagrees with the correct facts, even when the bot copied a broken source. Misses anything the reference facts do not mention, and a wrong reference. Measured here on 3 cases only (C-03, C-04, C-08); closes at L3, when the golden dataset gives it more cases |
 | Retrieval | wrong or missing document found | Context recall / precision | not measured here | Closes at L4 (cases C-13, C-14 deferred) |
 
 ---
@@ -170,7 +170,7 @@ Chosen: **0.7, with human review of the stopped answers.** We gain a gate where 
 
 | Frequency | What goes in | Split criterion | Price |
 | --- | --- | --- | --- |
-| Every merge (blocks) | All 13 cases, domain check only | deterministic, free, checks the mandate directly | USD 0 |
+| Every merge (blocks) | All 13 cases, domain check only | the check is deterministic and needs no judge, but the 13 agent calls still cost money; checks the mandate directly | about USD 0.014 per pass (agent calls only, section 7) |
 | Nightly | Faithfulness and hallucination, all cases, 3 runs | LLM-judged, affordable overnight; hallucination separates clean from broken (0.0 vs 1.0) | about USD 0.05 per pass |
 | Before release | Full set, all metrics, 3 runs plus 2 baseline runs, human review of red cases | answer relevancy is noisy and needs a human | about USD 0.05 per pass, paid once per release |
 
@@ -207,6 +207,11 @@ Evidence: in 5 runs, lesson-02 gave 6,500.00 in 4 of 5 and 6,423.91 in 1 of 5; c
 | Provider console, 11 Oct 2026 (UTC), all of Haiku 5.5 that day | 5,748,129 tokens in, 2,233,059 tokens out, **USD 1.69** | console, Usage and Cost pages |
 
 Formula: `run cost = calls x average tokens per call x price per token`
+
+Substituted for one pass (13 cases), from the report (5 passes: 157 agent calls with 473,962 tokens in and 49,102 out, 465 judge calls):
+- agent: 31.4 calls x (3,019 in x 0.1 + 313 out x 0.5) / 1,000,000 = 31.4 x USD 0.000458 = **USD 0.0144**
+- judge: 93 calls x USD 0.000388 per call (`judge.cost_usd` of the report: USD 0.1806 over 465 calls) = **USD 0.0361**
+- one pass: 0.0144 + 0.0361 = **USD 0.0505**, rounded to about USD 0.05; the merge gate (agent only) is the first line, USD 0.014
 
 **Check against the console.** The price is confirmed: 5.748 M x 0.1 + 2.233 M x 0.5 = USD 1.69, exactly the total on the console Cost page. The console total for the day is about 7 times the cost of the final report (USD 0.25). That is plausible: the day also contains an earlier run, chat tests on the stand, and the five-run comparisons used for the localisation (section 6). The same API key and workspace are also used for studying with Claude in parallel, and the projects were not separated, so the console cannot show what this evaluation alone cost. The chart cannot separate one run from the rest either, so the console gives an upper bound for one run (USD 1.69) and confirms the price and the order of magnitude, not the exact USD 0.05. The per-run figure therefore comes from the script report, which counts only the calls the script made. A separate workspace or API key for the evaluation would make the console figure exact. The judge reasons before answering, so its real cost may be above our estimate; the next run should record it.
 
